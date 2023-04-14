@@ -136,7 +136,7 @@ void kernelMain(void) {
 
    // 2. Tests to see if your cache reasonable size 
    // Made 320 Files to make sure that you cache is not to small 
-   // Also ensures proper deletes in your cache otherwise you get out of memory 
+   // Also ensures proper deletes in your cache otherwise you get out of memory      
    auto stress_test = fs->find(root, "stress_test");
 
     if(which_test[3]) {
