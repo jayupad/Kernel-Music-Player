@@ -104,7 +104,7 @@ extern "C" void kernelInit(void) {
   
         /* initialize IDT */
         IDT::init();
-        Pit::calibrate(1000);
+        Pit::calibrate(44100);
 
         SMP::running.fetch_add(1);
 

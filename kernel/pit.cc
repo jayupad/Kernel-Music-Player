@@ -5,22 +5,10 @@
 #include "smp.h"
 #include "threads.h"
 
-/*
- * The old PIT runs at a fixed frequency of 1193182Hz but doesn't support
- * multiple processors
- *
- * The APIT supports multiple processors but runs at a frequency we don't
- * know
- *
- * Here is plan:
- *    we're going to use the PIT to count how many cycles it takes
- *    for the APIT to run at the frequency we want then we're going
- *    to switch over to the APIT and abandon our old trusty friend
- *
- *    Running on an emulator complicates things because the emulator
- *    will never get timing exactly right so we try to do the calibration
- *    in a loop and hope for the best
- */
+
+// TODO: WTF IS THIS 
+constexpr double PI = 3.14159265358979323846;
+int position = 0;
 
 /* The standard frequency of the PIT */
 constexpr uint32_t PIT_FREQ = 1193182;
@@ -43,19 +31,6 @@ static PitInfo *pitInfo = nullptr;
 void Pit::calibrate(uint32_t hz) {
 
     pitInfo = new PitInfo();
-
-    // Our objective is to count how many APIT tickes happen in
-    // a second. To do that we're going to program the PIT at
-    // 20Hz and wait for it to signal us 20 times, giving us
-    // a delay if 1 second.
-    //
-    // We will set the APIT counter to 0xffffffff at the begining
-    // of the second and see how far it went at the end and this
-    // will help us determine its frequency
-    //
-    // Why 20Hz? becasue the PIT has a fixed frequency of 1193182Hz
-    // and a 16 bit divider, 20Hz will require a divider of 59658 which
-    // we can fit in 16 bits
     
 
     SMP::apit_lvt_timer.set(0x00010000); // oneshot, masked, ...
@@ -135,14 +110,57 @@ void Pit::init() {
     SMP::apit_initial_count.set(apitCounter);
 }
 
-extern "C" void apitHandler(uint32_t* things) {
-    // interrupts are disabled.
-    auto id = SMP::me();
-    if (id == 0) {
-        Pit::jiffies ++;
-    }
-    SMP::eoi_reg.set(0);
-    auto me = gheith::activeThreads[id];
-    if ((me == nullptr) || (me->isIdle) || (me->saveArea.no_preempt)) return;
-    yield();
+
+
+
+double sin(double x) {
+  double sum = 0.0;
+  double term = x;
+  double numerator = x;
+  double denominator = 1.0;
+  int sign = 1;
+  for (int i = 0; i < 10; i++) { // compute 10 terms of the Taylor series
+    sum += sign * term;
+    numerator *= x * x;
+    denominator *= (2 * i + 2) * (2 * i + 3);
+    term = numerator / denominator;
+    sign = -sign;
+  }
+  return sum;
 }
+
+
+extern "C" void apitHandler(uint32_t* things) {
+  auto id = SMP::me();
+  if (id == 0) {
+    Pit::jiffies ++;
+  }
+  SMP::eoi_reg.set(0);
+  auto me = gheith::activeThreads[id];
+  if ((me == nullptr) || (me->isIdle) || (me->saveArea.no_preempt)) return;
+
+  // update the speaker position with a sine wave
+  constexpr int frequency = 440;
+  constexpr int amplitude = 127;
+  constexpr int sampleRate = 44100;
+  const double phase = 2.0 * PI * frequency / sampleRate;
+  const int sample = static_cast<int>(amplitude * sin(position * phase));
+  position = (position + 1) % sampleRate;
+  outb(0x61, sample | 0x3); // set speaker position and turn speaker on
+
+  yield();
+}
+
+
+
+// extern "C" void apitHandler(uint32_t* things) {
+//     // interrupts are disabled.
+//     auto id = SMP::me();
+//     if (id == 0) {
+//         Pit::jiffies ++;
+//     }
+//     SMP::eoi_reg.set(0);
+//     auto me = gheith::activeThreads[id];
+//     if ((me == nullptr) || (me->isIdle) || (me->saveArea.no_preempt)) return;
+//     yield();
+// }

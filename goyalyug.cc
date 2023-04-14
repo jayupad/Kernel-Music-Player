@@ -4,79 +4,9 @@
 #include "threads.h"
 #include "semaphore.h"
 #include "future.h"
+#include "pit.h"
 
 
-/*
-####################################################################################################
-#  Welcome to this Test Case 005:                                                                  #   
-#         - Do you have a cahce for Inode?                                                         #
-#         - Do you have a big enough cache?                                                        #
-#         - Do you have a cache for read_block?                                                    #
-#         - Is it at all effcient or do you have a logic error?                                    #
-#         - Do you delete properly in these caches?                                                #
-#         - If I call your entry count it should not be reading from the disk so many times        #
-#            - Since we are read only, it is better to make your public methods not read from disk #
-#              instead save values in your stuct and return                                        #
-#                                                                                                  #
-#                                                                                                  #
-#  Notice: This testcase takes 2-3.4 seconds on my end on a high load machine, hence this test     #
-#          case has plenty of leanway, and is a kind testcase                                      #
-#                                                                                                  #
-#                                                                                                  #
-#  Main Focus: Test your cache logic to make sure it works and deletes properly.                   #
-#                                                                                                  #
-####################################################################################################
-*/
-
-// Given function by Dr.Gheith 
-void show(const char* name, Shared<Node> node, bool show) {
-
-    Debug::printf("*** looking at %s\n",name);
-
-    if (node == nullptr) {
-        Debug::printf("***      does not exist\n");
-        return;
-    } 
-
-    if (node->is_dir()) {
-        Debug::printf("***      is a directory\n");
-        Debug::printf("***      contains %d entries\n",node->entry_count());
-        Debug::printf("***      has %d links\n",node->n_links());
-    } else if (node->is_symlink()) {
-        Debug::printf("***      is a symbolic link\n");
-        auto sz = node->size_in_bytes();
-        Debug::printf("***      link size is %d\n",sz);
-        auto buffer = new char[sz+1];
-        buffer[sz] = 0;
-        node->get_symbol(buffer);
-        Debug::printf("***       => %s\n",buffer);
-    } else if (node->is_file()) {
-        Debug::printf("***      is a file\n");
-        auto sz = node->size_in_bytes();
-        Debug::printf("***      contains %d bytes\n",sz);
-        Debug::printf("***      has %d links\n",node->n_links());
-        if (show) {
-            auto buffer = new char[sz+1];
-            buffer[sz] = 0;
-            auto cnt = node->read_all(0,sz,buffer);
-            CHECK(sz == cnt);
-            CHECK(K::strlen(buffer) == cnt);
-            // can't just print the string because there is a 1000 character limit
-            // on the output string length.
-            for (uint32_t i=0; i<cnt; i++) {
-                Debug::printf("%c",buffer[i]);
-            }
-            delete[] buffer;
-            Debug::printf("\n");
-        }
-    } else {
-        Debug::printf("***    is of type %d\n",node->get_type());
-    }
-}
-
-
-
-/* Called by one CPU */
 void kernelMain(void) {
 
     // This array can help u test whatever you want to and 
@@ -136,7 +66,7 @@ void kernelMain(void) {
 
    // 2. Tests to see if your cache reasonable size 
    // Made 320 Files to make sure that you cache is not to small 
-   // Also ensures proper deletes in your cache otherwise you get out of memory      
+   // Also ensures proper deletes in your cache otherwise you get out of memory 
    auto stress_test = fs->find(root, "stress_test");
 
     if(which_test[3]) {
@@ -212,4 +142,3 @@ void kernelMain(void) {
 
 
 }
-
