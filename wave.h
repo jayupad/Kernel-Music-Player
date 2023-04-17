@@ -130,9 +130,9 @@ class WaveParser {
     Debug::printf("First few bytes from the wav file ~ 2: %x\n", *((uint32_t *)first_few + 1));
     delete first_few; 
 
-    for(int x = 0; x < 5; x++) {
+    for(int x = 0; x < 100; x++) {
         char * current_entry = (b_entries);
-        Debug::printf("%x\n", *((uint64_t *)(*((uint64_t *) current_entry)) + x));
+        Debug::printf("%x\n", *(((uint32_t *)(*((uint64_t *) current_entry))) + x));
     }
 
 

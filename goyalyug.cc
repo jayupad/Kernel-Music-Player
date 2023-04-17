@@ -391,7 +391,7 @@ void kernelMain(void) {
    
     auto root = fs->root;
 
-    auto hello = fs->find(root,"t0.dir_data_song.wav");
+    auto hello = fs->find(root,"swift_r8b_extra_compressed (1).wav");
 
     WaveParser wave_file = WaveParser(hello);
 
